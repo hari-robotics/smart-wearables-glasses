@@ -813,19 +813,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim == &htim2){
 
-        // Read sensor data from the IMU
-        IMU_ReadAccelerometerData(&accelerometer_data, raw_accelerometer);
-        IMU_ReadGyroscopeData(&gyroscope_data, raw_gyroscope);
+    // Read sensor data from the IMU
+    IMU_ReadAccelerometerData(&accelerometer_data, raw_accelerometer);
+    IMU_ReadGyroscopeData(&gyroscope_data, raw_gyroscope);
 
-        // Send the accelerometer and gyroscope data via BLE
-        // We are sending only the X-axis data
-        BLE_SendPacket(DATA_TYPE_IMU_ACCELERATION, raw_accelerometer);
-        //TODO: Change Gyro function
-        //BLE_SendPacket(DATA_TYPE_IMU_GYROSCOPE, (uint32_t)gyroscope_data.x);
+    // Send the accelerometer and gyroscope data via BLE
+    // We are sending only the X-axis data
+    BLE_SendPacket(DATA_TYPE_IMU_ACCELERATION, raw_accelerometer);
+    //TODO: Change Gyro function
+    //BLE_SendPacket(DATA_TYPE_IMU_GYROSCOPE, (uint32_t)gyroscope_data.x);
 
-        // Save the raw accelerometer and gyroscope data in memory
-        // Create timestamp with sampling frequency @100 Hz
-        timestamp.sss=tim*10;
+    // Save the raw accelerometer and gyroscope data in memory
+    // Create timestamp with sampling frequency @100 Hz
+    timestamp.sss=tim*10;
 		if(timestamp.sss == 1000) {
 			timestamp.ss=timestamp.ss+1;
 			timestamp.sss= 0;
@@ -891,19 +891,17 @@ void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin)
 // Falling Edge when User Button is not pressed
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 {
-	if(GPIO_Pin == USER_BUTTON_Pin)
-	{
+  if (GPIO_Pin == USER_BUTTON_Pin) {
 
-	}
-    else if (GPIO_Pin == PPG_INT_Pin)
-    {
-          BioSensors_NotifyPpgReady();
-          uint8_t bio_data[6];
-          BioSensors_ReadData(bio_data);
+  } else if (GPIO_Pin == PPG_INT_Pin) {
+      BioSensors_NotifyPpgReady();
 
-          // Send the accelerometer and gyroscope data via BLE
-          // We are sending only the X-axis data
-          BLE_SendPacket(DATA_TYPE_BIO_SENSORS, bio_data);
+      // Acquire byte stream data of BIO sensors
+      uint8_t bio_data[6];
+      BioSensors_ReadData(bio_data);
+
+      // Send BIO sensor data through BLE (HR, SpO2, Temp)
+      BLE_SendPacket(DATA_TYPE_BIO_SENSORS, bio_data);
     }
 }
 

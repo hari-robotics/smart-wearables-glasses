@@ -8,8 +8,14 @@ class MyStream {
       StreamController<List<int>>.broadcast();
   final StreamController<List<int>> controllerBattery =
       StreamController<List<int>>.broadcast();
+  final StreamController<List<int>> controllerRaw =
+      StreamController<List<int>>.broadcast();
   final StreamController<List<int>> controllerSend =
       StreamController<List<int>>.broadcast();
+
+  void addRawPacket(List<int> data) {
+    controllerRaw.add(List<int>.unmodifiable(data));
+  }
 
   void setNum(List<int> data) {
     final typeCode = getPacketTypeCode(data);

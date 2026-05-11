@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:smart_wearables_app/connection/stream.dart';
 import 'package:smart_wearables_app/utils/sensor_utils.dart';
@@ -22,22 +25,58 @@ class ChartData {
   final double y;
 }
 
+class LoggedBlePacket {
+  LoggedBlePacket({required this.timestamp, required this.bytes});
+
+  final DateTime timestamp;
+  final List<int> bytes;
+}
+
 class _HomePageState extends State<HomePage> {
+  static const List<String> _csvColumns = <String>[
+    'timestamp_iso',
+    'type_code_hex',
+    'type_name',
+    'packet_hex',
+    'accelerometer_x_raw',
+    'accelerometer_y_raw',
+    'accelerometer_z_raw',
+    'accelerometer_x_g',
+    'accelerometer_y_g',
+    'accelerometer_z_g',
+    'gyroscope_x_raw',
+    'gyroscope_y_raw',
+    'gyroscope_z_raw',
+    'gyroscope_x_dps',
+    'gyroscope_y_dps',
+    'gyroscope_z_dps',
+    'heart_rate_bpm',
+    'spo2_percent',
+    'temperature_c',
+  ];
+
   late final StreamSubscription<List<int>> _dataSubscription;
+  late final StreamSubscription<List<int>> _rawDataSubscription;
 
   final List<ChartData> heartRateData = <ChartData>[];
   final List<ChartData> spo2Data = <ChartData>[];
   final List<ChartData> temperatureData = <ChartData>[];
+  final List<LoggedBlePacket> _recordedPackets = <LoggedBlePacket>[];
   final int maxDataPoints = 50;
 
   int xCounter = 0;
   int? dataTypeCode;
+  bool _isRecording = false;
+  bool _isSaving = false;
   BioSensorReading latestReading = const BioSensorReading();
 
   @override
   void initState() {
     super.initState();
     _dataSubscription = widget.stream.controller.stream.listen(_parsePacket);
+    _rawDataSubscription = widget.stream.controllerRaw.stream.listen(
+      _recordRawPacket,
+    );
   }
 
   void _parsePacket(List<int> packet) {
@@ -86,6 +125,16 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _recordRawPacket(List<int> packet) {
+    if (!_isRecording) {
+      return;
+    }
+
+    _recordedPackets.add(
+      LoggedBlePacket(timestamp: DateTime.now(), bytes: List<int>.from(packet)),
+    );
+  }
+
   String _formatValue(double? value, String unit) {
     if (value == null) {
       return '--';
@@ -94,9 +143,271 @@ class _HomePageState extends State<HomePage> {
     return '${value.toStringAsFixed(1)} $unit';
   }
 
+  Future<void> _toggleRecording() async {
+    if (_isSaving) {
+      return;
+    }
+
+    if (_isRecording) {
+      setState(() {
+        _isRecording = false;
+      });
+
+      if (_recordedPackets.isEmpty) {
+        _showMessage('No BLE data was recorded.');
+        return;
+      }
+
+      await _saveRecordingFlow();
+      return;
+    }
+
+    setState(() {
+      _recordedPackets.clear();
+      _isRecording = true;
+    });
+    _showMessage('Started recording BLE data.');
+  }
+
+  Future<void> _saveRecordingFlow() async {
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final fileName = await _promptForFileName();
+      if (!mounted) {
+        return;
+      }
+      if (fileName == null) {
+        _showMessage('Save cancelled. The recording was not exported.');
+        return;
+      }
+
+      await _waitForOverlayToClose();
+      if (!mounted) {
+        return;
+      }
+
+      final savedPath = await _saveRecordingWithPicker(fileName);
+      if (!mounted) {
+        return;
+      }
+      if (savedPath == null) {
+        _showMessage('Save cancelled. The recording was not exported.');
+        return;
+      }
+
+      final pathSuffix = savedPath.isEmpty ? '.' : ' to $savedPath';
+      _showMessage('Saved BLE log$pathSuffix');
+      _recordedPackets.clear();
+    } catch (error) {
+      if (mounted) {
+        _showMessage('Failed to save BLE log: $error');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  Future<String?> _promptForFileName() async {
+    final controller = TextEditingController(text: _buildDefaultFileName());
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Save BLE recording'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'File name',
+              hintText: 'ble_log_20260511_103000.csv',
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final fileName = controller.text.trim();
+                if (fileName.isEmpty) {
+                  return;
+                }
+                Navigator.of(dialogContext).pop(fileName);
+              },
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+
+    await Future<void>.delayed(Duration.zero);
+    await WidgetsBinding.instance.endOfFrame;
+    controller.dispose();
+    return result;
+  }
+
+  Future<void> _waitForOverlayToClose() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await Future<void>.delayed(Duration.zero);
+    await WidgetsBinding.instance.endOfFrame;
+  }
+
+  Future<String?> _saveRecordingWithPicker(String fileName) {
+    final normalizedFileName = _normalizeFileName(fileName);
+    final bytes = Uint8List.fromList(utf8.encode(_buildCsvContent()));
+
+    return FilePicker.platform.saveFile(
+      dialogTitle: 'Select where to save BLE log',
+      fileName: normalizedFileName,
+      type: FileType.custom,
+      allowedExtensions: const <String>['csv'],
+      bytes: bytes,
+    );
+  }
+
+  String _buildCsvContent() {
+    final buffer = StringBuffer();
+    buffer.writeln(_csvColumns.map(_csvCell).join(','));
+
+    for (final packet in _recordedPackets) {
+      final row = _buildCsvRow(packet);
+      buffer.writeln(
+        _csvColumns
+            .map((String column) => _csvCell(row[column] ?? ''))
+            .join(','),
+      );
+    }
+
+    return buffer.toString();
+  }
+
+  Map<String, String> _buildCsvRow(LoggedBlePacket packet) {
+    final typeCode = getPacketTypeCode(packet.bytes);
+    final typeCodeHex = typeCode == null
+        ? ''
+        : '0x${typeCode.toRadixString(16).padLeft(2, '0').toUpperCase()}';
+    final packetHex = packet.bytes
+        .map((int byte) => byte.toRadixString(16).padLeft(2, '0').toUpperCase())
+        .join(' ');
+
+    final row = <String, String>{
+      'timestamp_iso': packet.timestamp.toIso8601String(),
+      'type_code_hex': typeCodeHex,
+      'type_name': getSensorNameFromTypeCode(typeCode),
+      'packet_hex': packetHex,
+    };
+
+    if (typeCode == null) {
+      return row;
+    }
+
+    if (isAccelerometerTypeCode(typeCode)) {
+      final reading = parseAccelerometerPacket(packet.bytes);
+      if (reading == null) {
+        return row;
+      }
+
+      row.addAll(<String, String>{
+        'accelerometer_x_raw': _formatOptionalInt(reading.xRaw),
+        'accelerometer_y_raw': _formatOptionalInt(reading.yRaw),
+        'accelerometer_z_raw': _formatOptionalInt(reading.zRaw),
+        'accelerometer_x_g': _formatOptionalDouble(reading.xScaled, 6),
+        'accelerometer_y_g': _formatOptionalDouble(reading.yScaled, 6),
+        'accelerometer_z_g': _formatOptionalDouble(reading.zScaled, 6),
+      });
+      return row;
+    }
+
+    if (isGyroscopeTypeCode(typeCode)) {
+      final reading = parseGyroscopePacket(packet.bytes);
+      if (reading == null) {
+        return row;
+      }
+
+      row.addAll(<String, String>{
+        'gyroscope_x_raw': _formatOptionalInt(reading.xRaw),
+        'gyroscope_y_raw': _formatOptionalInt(reading.yRaw),
+        'gyroscope_z_raw': _formatOptionalInt(reading.zRaw),
+        'gyroscope_x_dps': _formatOptionalDouble(reading.xScaled, 6),
+        'gyroscope_y_dps': _formatOptionalDouble(reading.yScaled, 6),
+        'gyroscope_z_dps': _formatOptionalDouble(reading.zScaled, 6),
+      });
+      return row;
+    }
+
+    if (isBioSensorTypeCode(typeCode)) {
+      final reading = parseBioSensorPacket(packet.bytes);
+      if (reading == null) {
+        return row;
+      }
+
+      row.addAll(<String, String>{
+        'heart_rate_bpm': _formatOptionalDouble(reading.heartRateBpm, 1),
+        'spo2_percent': _formatOptionalDouble(reading.spo2Percent, 1),
+        'temperature_c': _formatOptionalDouble(reading.temperatureC, 1),
+      });
+    }
+
+    return row;
+  }
+
+  String _csvCell(String value) {
+    final escapedValue = value.replaceAll('"', '""');
+    return '"$escapedValue"';
+  }
+
+  String _formatOptionalInt(int? value) {
+    return value?.toString() ?? '';
+  }
+
+  String _formatOptionalDouble(double? value, int fractionDigits) {
+    if (value == null) {
+      return '';
+    }
+    return value.toStringAsFixed(fractionDigits);
+  }
+
+  String _normalizeFileName(String input) {
+    final sanitized = input.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
+    final baseName = sanitized.isEmpty ? _buildDefaultFileName() : sanitized;
+    if (baseName.toLowerCase().endsWith('.csv')) {
+      return baseName;
+    }
+    return '$baseName.csv';
+  }
+
+  String _buildDefaultFileName() {
+    final now = DateTime.now();
+    final year = now.year.toString().padLeft(4, '0');
+    final month = now.month.toString().padLeft(2, '0');
+    final day = now.day.toString().padLeft(2, '0');
+    final hour = now.hour.toString().padLeft(2, '0');
+    final minute = now.minute.toString().padLeft(2, '0');
+    final second = now.second.toString().padLeft(2, '0');
+    return 'ble_log_$year$month${day}_$hour$minute$second.csv';
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   void dispose() {
     _dataSubscription.cancel();
+    _rawDataSubscription.cancel();
     super.dispose();
   }
 
@@ -163,6 +474,24 @@ class _HomePageState extends State<HomePage> {
             yAxisLabel: '{value} C',
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _isSaving ? null : _toggleRecording,
+        icon: Icon(
+          _isSaving
+              ? Icons.save_outlined
+              : _isRecording
+              ? Icons.stop_circle_outlined
+              : Icons.fiber_manual_record,
+        ),
+        label: Text(
+          _isSaving
+              ? 'Saving...'
+              : _isRecording
+              ? 'Stop Recording'
+              : 'Record BLE',
+        ),
+        backgroundColor: _isRecording ? Colors.red : null,
       ),
     );
   }

@@ -265,6 +265,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
 
               // data[0] == '{' (ASCII 123) AND data[19] == '}' (ASCII 125)
               if (data[0] == 123 && data[fixedPacketLength - 1] == 125) {
+                incomingBLEStream.addRawPacket(data);
                 if (isBioSensorPacket(data)) {
                   incomingBLEStream.setNum(data);
                   debugPrint(

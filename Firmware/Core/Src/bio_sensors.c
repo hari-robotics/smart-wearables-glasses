@@ -46,11 +46,23 @@ static void BioSensors_PushPpgSample(uint32_t red_sample, uint32_t ir_sample);
 static uint16_t BioSensors_GetOrderedBufferIndex(uint16_t ordered_index);
 static void BioSensors_UpdateVitalEstimates(void);
 
+/**
+ * @brief Returns the absolute value of a floating-point number.
+ * @param value Input value.
+ * @return Absolute value of @p value.
+ */
 static float BioSensors_AbsFloat(float value)
 {
     return (value >= 0.0f) ? value : -value;
 }
 
+/**
+ * @brief Constrains a floating-point value to a closed interval.
+ * @param value Input value.
+ * @param min_value Lower bound of the interval.
+ * @param max_value Upper bound of the interval.
+ * @return Clamped value within [@p min_value, @p max_value].
+ */
 static float BioSensors_ClampFloat(float value, float min_value, float max_value)
 {
     if (value < min_value) {
@@ -64,6 +76,11 @@ static float BioSensors_ClampFloat(float value, float min_value, float max_value
     return value;
 }
 
+/**
+ * @brief Converts a floating-point reading to a scaled signed 16-bit integer.
+ * @param value Floating-point reading to convert.
+ * @return Rounded and saturated fixed-point value using BIOSENSORS_DATA_DECIMAL_SCALE.
+ */
 static int16_t BioSensors_FloatToScaledInt16(float value)
 {
     float scaled_value = value * (float)BIOSENSORS_DATA_DECIMAL_SCALE;
@@ -79,6 +96,13 @@ static int16_t BioSensors_FloatToScaledInt16(float value)
     return (int16_t)((scaled_value >= 0.0f) ? (scaled_value + 0.5f) : (scaled_value - 0.5f));
 }
 
+/**
+ * @brief Reads a single 8-bit register over I2C.
+ * @param device_address 7-bit I2C device address.
+ * @param register_address Register address to read.
+ * @param value Output buffer that receives the register value.
+ * @return BIOSENSORS_OK on success, otherwise BIOSENSORS_ERROR.
+ */
 static uint8_t BioSensors_ReadRegister8(uint8_t device_address, uint8_t register_address, uint8_t *value)
 {
     if (value == 0) {
@@ -98,6 +122,13 @@ static uint8_t BioSensors_ReadRegister8(uint8_t device_address, uint8_t register
     return BIOSENSORS_OK;
 }
 
+/**
+ * @brief Writes a single 8-bit register over I2C.
+ * @param device_address 7-bit I2C device address.
+ * @param register_address Register address to write.
+ * @param value Register value to transmit.
+ * @return BIOSENSORS_OK on success, otherwise BIOSENSORS_ERROR.
+ */
 static uint8_t BioSensors_WriteRegister8(uint8_t device_address, uint8_t register_address, uint8_t value)
 {
     if (HAL_I2C_Mem_Write(&hi2c3,
@@ -113,6 +144,14 @@ static uint8_t BioSensors_WriteRegister8(uint8_t device_address, uint8_t registe
     return BIOSENSORS_OK;
 }
 
+/**
+ * @brief Reads a sequence of bytes from a device register over I2C.
+ * @param device_address 7-bit I2C device address.
+ * @param register_address First register address to read.
+ * @param buffer Output buffer for the received bytes.
+ * @param length Number of bytes to read.
+ * @return BIOSENSORS_OK on success, otherwise BIOSENSORS_ERROR.
+ */
 static uint8_t BioSensors_ReadBytes(uint8_t device_address, uint8_t register_address, uint8_t *buffer, uint16_t length)
 {
     if ((buffer == 0) || (length == 0U)) {
@@ -132,6 +171,10 @@ static uint8_t BioSensors_ReadBytes(uint8_t device_address, uint8_t register_add
     return BIOSENSORS_OK;
 }
 
+/**
+ * @brief Issues a reset to the MAX30101 and waits for completion.
+ * @return BIOSENSORS_OK if the reset bit clears before timeout, otherwise BIOSENSORS_ERROR.
+ */
 static uint8_t BioSensors_ResetMAX30101(void)
 {
     uint8_t mode_config = 0U;
@@ -162,6 +205,10 @@ static uint8_t BioSensors_ResetMAX30101(void)
     return BIOSENSORS_ERROR;
 }
 
+/**
+ * @brief Clears the MAX30101 FIFO state and pointer registers.
+ * @return BIOSENSORS_OK on success, otherwise BIOSENSORS_ERROR.
+ */
 static uint8_t BioSensors_ClearMAX30101Fifo(void)
 {
     if (BioSensors_WriteRegister8(BIOSENSORS_MAX30101_ADDRESS_7BIT,
@@ -185,6 +232,11 @@ static uint8_t BioSensors_ClearMAX30101Fifo(void)
     return BIOSENSORS_OK;
 }
 
+/**
+ * @brief Stores one PPG sample pair into the circular buffers.
+ * @param red_sample Raw red-channel sample from the MAX30101.
+ * @param ir_sample Raw infrared-channel sample from the MAX30101.
+ */
 static void BioSensors_PushPpgSample(uint32_t red_sample, uint32_t ir_sample)
 {
     g_bio_sensors.red_buffer[g_bio_sensors.write_index] = red_sample;
@@ -200,6 +252,11 @@ static void BioSensors_PushPpgSample(uint32_t red_sample, uint32_t ir_sample)
     }
 }
 
+/**
+ * @brief Maps a chronological sample index to the circular buffer index.
+ * @param ordered_index Zero-based index in oldest-to-newest order.
+ * @return Backing buffer index that contains the requested sample.
+ */
 static uint16_t BioSensors_GetOrderedBufferIndex(uint16_t ordered_index)
 {
     uint16_t oldest_index = 0U;
@@ -211,6 +268,10 @@ static uint16_t BioSensors_GetOrderedBufferIndex(uint16_t ordered_index)
     return (uint16_t)((oldest_index + ordered_index) % BIOSENSORS_PPG_BUFFER_SIZE);
 }
 
+/**
+ * @brief Updates heart-rate and SpO2 estimates from buffered PPG samples.
+ * @note This estimator is intentionally lightweight and not intended for clinical use.
+ */
 static void BioSensors_UpdateVitalEstimates(void)
 {
     uint16_t index;
@@ -331,6 +392,10 @@ static void BioSensors_UpdateVitalEstimates(void)
     }
 }
 
+/**
+ * @brief Drains unread MAX30101 FIFO samples and refreshes vital estimates.
+ * @return BIOSENSORS_OK if at least one new sample batch was processed, otherwise BIOSENSORS_ERROR.
+ */
 static uint8_t BioSensors_ReadMAX30101Fifo(void)
 {
     uint8_t write_pointer = 0U;
@@ -422,6 +487,10 @@ static uint8_t BioSensors_ReadMAX30101Fifo(void)
     return did_update;
 }
 
+/**
+ * @brief Services a pending PPG-ready event from the MAX30101 path.
+ * @return BIOSENSORS_OK if any sensor data was updated, otherwise BIOSENSORS_ERROR.
+ */
 static uint8_t BioSensors_ServicePpgInterrupt(void)
 {
     uint8_t updated = BIOSENSORS_ERROR;
@@ -444,6 +513,10 @@ static uint8_t BioSensors_ServicePpgInterrupt(void)
     return updated;
 }
 
+/**
+ * @brief Initializes the MAX30101 PPG sensor and clears runtime state.
+ * @return BIOSENSORS_OK on success, otherwise BIOSENSORS_ERROR.
+ */
 uint8_t BioSensors_InitMAX30101(void)
 {
     uint8_t part_id = 0U;
@@ -539,6 +612,10 @@ uint8_t BioSensors_InitMAX30101(void)
     return BIOSENSORS_OK;
 }
 
+/**
+ * @brief Initializes the MAX30205 temperature sensor.
+ * @return BIOSENSORS_OK on success, otherwise BIOSENSORS_ERROR.
+ */
 uint8_t BioSensors_InitMAX30205(void)
 {
     uint8_t configuration = 0U;
@@ -571,6 +648,10 @@ uint8_t BioSensors_InitMAX30205(void)
     return BIOSENSORS_OK;
 }
 
+/**
+ * @brief Initializes all supported biosensors on the shared I2C bus.
+ * @return BIOSENSORS_OK only if both MAX30101 and MAX30205 initialization succeed.
+ */
 uint8_t BioSensors_Init(void)
 {
     uint8_t max30101_status = BioSensors_InitMAX30101();
@@ -579,6 +660,11 @@ uint8_t BioSensors_Init(void)
     return (uint8_t)((max30101_status == BIOSENSORS_OK) && (max30205_status == BIOSENSORS_OK));
 }
 
+/**
+ * @brief Reads the current temperature from the MAX30205.
+ * @param temperature_c Output pointer that receives the temperature in degrees Celsius.
+ * @return BIOSENSORS_OK on success, otherwise BIOSENSORS_ERROR.
+ */
 static uint8_t BioSensors_ReadTemperature(float *temperature_c)
 {
     uint8_t raw_temperature[MAX30205_TEMPERATURE_REGISTER_SIZE_BYTES] = {0U, 0U};
@@ -605,6 +691,10 @@ static uint8_t BioSensors_ReadTemperature(float *temperature_c)
     return BIOSENSORS_OK;
 }
 
+/**
+ * @brief Updates cached biosensor readings when new data is available.
+ * @return BIOSENSORS_OK if any cached reading was refreshed, otherwise BIOSENSORS_ERROR.
+ */
 uint8_t BioSensors_Update(void)
 {
     uint8_t updated = BIOSENSORS_ERROR;
@@ -622,6 +712,11 @@ uint8_t BioSensors_Update(void)
     return updated;
 }
 
+/**
+ * @brief Packs the latest scaled biosensor readings into a byte buffer.
+ * @param data Output buffer that receives heart rate, SpO2, and temperature as big-endian int16 values.
+ * @return BIOSENSORS_OK when all three readings are valid, otherwise BIOSENSORS_ERROR.
+ */
 uint8_t BioSensors_ReadData(uint8_t* data)
 {
     if (data == 0) {
@@ -657,6 +752,9 @@ uint8_t BioSensors_ReadData(uint8_t* data)
     return BIOSENSORS_ERROR;
 }
 
+/**
+ * @brief Signals that a new batch of PPG samples is ready to be serviced.
+ */
 void BioSensors_NotifyPpgReady(void)
 {
     g_bio_sensors.ppg_ready_flag = 1U;

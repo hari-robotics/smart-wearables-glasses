@@ -250,13 +250,13 @@ void BLE_SendPacket(BLE_DataType ble_data_type, uint8_t* data_buffer) {
             break;
     }
 
-    // Bytes 2-4: The 32-bit value, packed in big-endian format
-    ble_packet[2] = data_buffer[0]; // X Axis LSB
-    ble_packet[3] = data_buffer[1]; // X Axis MSB
-    ble_packet[4] = data_buffer[2]; // Y Axis LSB
-    ble_packet[5] = data_buffer[3]; // Y Axis MSB
-    ble_packet[6] = data_buffer[4]; // Z Axis LSB
-    ble_packet[7] = data_buffer[5]; // Z Axis MSB
+    // Bytes 6-byte stream are aviliable to send for contents
+    ble_packet[2] = data_buffer[0];
+    ble_packet[3] = data_buffer[1];
+    ble_packet[4] = data_buffer[2];
+    ble_packet[5] = data_buffer[3];
+    ble_packet[6] = data_buffer[4];
+    ble_packet[7] = data_buffer[5];
 
     // Send the complete packet over UART
     BLE_SendData(ble_packet, sizeof(ble_packet));

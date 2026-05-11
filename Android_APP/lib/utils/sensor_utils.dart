@@ -5,6 +5,28 @@ const int kPacketEndByte = 125;
 const int kAsciiAccelerometerType = 0x41; // 'A'
 const int kAsciiBioSensorsType = 0x42; // 'B'
 const int kAsciiGyroscopeType = 0x47; // 'G'
+const double kAccelerometerSensitivityGPerLsb =
+    0.061 / 1000.0; // Matches firmware ACC_FS_2G
+const double kGyroscopeSensitivityDpsPerLsb =
+    8.75 / 1000.0; // Matches firmware GYR_FS_250DPS
+
+class ImuReading {
+  const ImuReading({
+    this.xRaw,
+    this.yRaw,
+    this.zRaw,
+    this.xScaled,
+    this.yScaled,
+    this.zScaled,
+  });
+
+  final int? xRaw;
+  final int? yRaw;
+  final int? zRaw;
+  final double? xScaled;
+  final double? yScaled;
+  final double? zScaled;
+}
 
 class BioSensorReading {
   const BioSensorReading({
@@ -39,6 +61,14 @@ bool isBioSensorPacket(List<int> packet) {
 
 bool isBioSensorTypeCode(int typeCode) {
   return typeCode == kAsciiBioSensorsType;
+}
+
+bool isAccelerometerTypeCode(int typeCode) {
+  return typeCode == kAsciiAccelerometerType;
+}
+
+bool isGyroscopeTypeCode(int typeCode) {
+  return typeCode == kAsciiGyroscopeType;
 }
 
 String getSensorNameFromTypeCode(int? typeCode) {
@@ -98,6 +128,55 @@ BioSensorReading? parseBioSensorPacket(List<int> packet) {
     heartRateBpm: _scaledInt16ToDoubleOrNull(heartRateRaw),
     spo2Percent: _scaledInt16ToDoubleOrNull(spo2Raw),
     temperatureC: _scaledInt16ToDoubleOrNull(temperatureRaw),
+  );
+}
+
+ImuReading? parseAccelerometerPacket(List<int> packet) {
+  return _parseImuPacket(
+    packet,
+    expectedTypeCode: kAsciiAccelerometerType,
+    scale: kAccelerometerSensitivityGPerLsb,
+  );
+}
+
+ImuReading? parseGyroscopePacket(List<int> packet) {
+  return _parseImuPacket(
+    packet,
+    expectedTypeCode: kAsciiGyroscopeType,
+    scale: kGyroscopeSensitivityDpsPerLsb,
+  );
+}
+
+ImuReading? _parseImuPacket(
+  List<int> packet, {
+  required int expectedTypeCode,
+  required double scale,
+}) {
+  final typeCode = getPacketTypeCode(packet);
+  if (typeCode != expectedTypeCode) {
+    return null;
+  }
+
+  final payload = getPacketPayload(packet);
+  if (payload.length < 6) {
+    return null;
+  }
+
+  final byteData = Uint8List.fromList(
+    payload.sublist(0, 6),
+  ).buffer.asByteData();
+
+  final xRaw = byteData.getInt16(0, Endian.little);
+  final yRaw = byteData.getInt16(2, Endian.little);
+  final zRaw = byteData.getInt16(4, Endian.little);
+
+  return ImuReading(
+    xRaw: xRaw,
+    yRaw: yRaw,
+    zRaw: zRaw,
+    xScaled: xRaw * scale,
+    yScaled: yRaw * scale,
+    zScaled: zRaw * scale,
   );
 }
 

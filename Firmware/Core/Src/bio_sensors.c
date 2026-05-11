@@ -237,14 +237,16 @@ static uint8_t BioSensors_ClearMAX30101Fifo(void)
  * @param red_sample Raw red-channel sample from the MAX30101.
  * @param ir_sample Raw infrared-channel sample from the MAX30101.
  */
-static void BioSensors_PushPpgSample(uint32_t red_sample, uint32_t ir_sample)
-{
+static void BioSensors_PushPpgSample(uint32_t red_sample, uint32_t ir_sample) {
+    // Push the data in to buffer
     g_bio_sensors.red_buffer[g_bio_sensors.write_index] = red_sample;
     g_bio_sensors.ir_buffer[g_bio_sensors.write_index] = ir_sample;
 
+    // Save the latest data
     g_bio_sensors.latest.red = red_sample;
     g_bio_sensors.latest.ir = ir_sample;
 
+    // Save the writing pointer index of the buffer
     g_bio_sensors.write_index = (uint16_t)((g_bio_sensors.write_index + 1U) % BIOSENSORS_PPG_BUFFER_SIZE);
 
     if (g_bio_sensors.sample_count < BIOSENSORS_PPG_BUFFER_SIZE) {
@@ -491,17 +493,19 @@ static uint8_t BioSensors_ReadMAX30101Fifo(void)
  * @brief Services a pending PPG-ready event from the MAX30101 path.
  * @return BIOSENSORS_OK if any sensor data was updated, otherwise BIOSENSORS_ERROR.
  */
-static uint8_t BioSensors_ServicePpgInterrupt(void)
-{
+static uint8_t BioSensors_ServicePpgInterrupt(void) {
     uint8_t updated = BIOSENSORS_ERROR;
     float unused_temperature = 0.0f;
 
+    // If not ready, return a error in reading
     if (g_bio_sensors.ppg_ready_flag == 0U) {
         return BIOSENSORS_ERROR;
     }
 
+    // Clear the ready flag
     g_bio_sensors.ppg_ready_flag = 0U;
 
+    // Trying to read the temperature and ppg sensors
     if (BioSensors_ReadTemperature(&unused_temperature) == BIOSENSORS_OK) {
         updated = BIOSENSORS_OK;
     }
@@ -700,10 +704,12 @@ uint8_t BioSensors_Update(void)
     uint8_t updated = BIOSENSORS_ERROR;
     float unused_temperature = 0.0f;
 
+    // Trying to update the data, if sensor is not ready, ask for a interrupt flag update
     if (g_bio_sensors.ppg_ready_flag != 0U) {
         return BioSensors_ServicePpgInterrupt();
     }
 
+    // deposit the temperature data if it is not valid
     if ((g_bio_sensors.latest.temperature_valid == 0U) &&
         (BioSensors_ReadTemperature(&unused_temperature) == BIOSENSORS_OK)) {
         updated = BIOSENSORS_OK;
@@ -751,6 +757,8 @@ uint8_t BioSensors_ReadData(uint8_t* data)
 
     return BIOSENSORS_ERROR;
 }
+
+
 
 /**
  * @brief Signals that a new batch of PPG samples is ready to be serviced.

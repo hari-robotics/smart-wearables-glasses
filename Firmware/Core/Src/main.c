@@ -205,6 +205,7 @@ int main(void)
 	HAL_Delay(500);
   }
 
+  // Initializing all Bio sensors
   (void)BioSensors_Init();
 
   // Turn off the red LED to indicate that initialization is complete
@@ -220,7 +221,8 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-      (void)BioSensors_Update();
+    // Trying to update the Bio sensor data
+    (void)BioSensors_Update();
 
 		//LED_Toggle(LED_GREEN);
 		//HAL_Delay(1000);

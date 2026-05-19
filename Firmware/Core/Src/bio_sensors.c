@@ -1,4 +1,4 @@
-#include "bio_sensors.h"
+#include "bio_sensors/bio_sensors.h"
 
 extern I2C_HandleTypeDef hi2c3;
 
@@ -766,4 +766,9 @@ uint8_t BioSensors_ReadData(uint8_t* data)
 void BioSensors_NotifyPpgReady(void)
 {
     g_bio_sensors.ppg_ready_flag = 1U;
+}
+
+
+void BioSensors_EXTI_Callback() {
+  
 }

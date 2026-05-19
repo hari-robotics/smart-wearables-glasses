@@ -8,8 +8,8 @@
 
 #include <stdint.h>
 
-#include "MAX30101.h"
-#include "MAX30205.h"
+#include "defines/MAX30101_reg.h"
+#include "defines/MAX30205_reg.h"
 
 #ifdef __cplusplus
 extern "C" {

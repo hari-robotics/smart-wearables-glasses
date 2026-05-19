@@ -1,0 +1,27 @@
+#ifndef BIO_SENSORS_APP_BIO_SENSORS_APP_H
+#define BIO_SENSORS_APP_BIO_SENSORS_APP_H
+
+#include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct {
+  uint32_t ir_led_raw;
+  uint32_t red_led_raw;
+  float heart_rate;
+  float spo2_density;
+  float body_temperature;
+} BioSensorsData;
+
+void BioSensors_InitCpp();
+void BioSensors_LoopCpp();
+void BioSensors_ExtiCpp();
+
+void BioSensors_AcquireData(BioSensorsData* data);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

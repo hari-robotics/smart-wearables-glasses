@@ -35,7 +35,7 @@
 #include "led_driver.h"
 #include "imu_driver.h"
 #include "bluetooth.h"
-#include "bio_sensors.h"
+#include "bio_sensors/app/bio_sensors_app.h"
 
 /* USER CODE END Includes */
 
@@ -206,7 +206,7 @@ int main(void)
   }
 
   // Initializing all Bio sensors
-  (void)BioSensors_Init();
+  BioSensors_InitCpp();
 
   // Turn off the red LED to indicate that initialization is complete
   LED_Off(LED_RED);
@@ -222,7 +222,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
     // Trying to update the Bio sensor data
-    (void)BioSensors_Update();
+    BioSensors_LoopCpp();
 
 		//LED_Toggle(LED_GREEN);
 		//HAL_Delay(1000);
@@ -896,15 +896,17 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
   if (GPIO_Pin == USER_BUTTON_Pin) {
 
   } else if (GPIO_Pin == PPG_INT_Pin) {
-      BioSensors_NotifyPpgReady();
+    BioSensors_ExtiCpp();
 
-      // Acquire byte stream data of BIO sensors
-      uint8_t bio_data[6];
-      BioSensors_ReadData(bio_data);
+    BioSensors_NotifyPpgReady();
 
-      // Send BIO sensor data through BLE (HR, SpO2, Temp)
-      BLE_SendPacket(DATA_TYPE_BIO_SENSORS, bio_data);
-    }
+    // Acquire byte stream data of BIO sensors
+    uint8_t bio_data[6];
+    BioSensors_ReadData(bio_data);
+
+    // Send BIO sensor data through BLE (HR, SpO2, Temp)
+    BLE_SendPacket(DATA_TYPE_BIO_SENSORS, bio_data);
+  }
 }
 
 /* USER CODE END 4 */

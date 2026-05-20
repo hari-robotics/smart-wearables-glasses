@@ -1,0 +1,60 @@
+#ifndef BIO_SENSORS_DRIVERS_MAX30101_H
+#define BIO_SENSORS_DRIVERS_MAX30101_H
+
+#include <cstdint>
+
+#include "bio_sensors/bsp/i2c_driver.h"
+
+namespace bio_sensors {
+
+typedef enum { PPG_OK, PPG_NODATA, PPG_ERROR } ppg_status_t;
+
+constexpr uint8_t MAX30101_BATCH_SIZE = 8;
+constexpr uint16_t MAX30101_BUFFER_SIZE = 400;
+
+typedef struct {
+  uint8_t fifo_config;
+  uint8_t mode;
+  uint8_t spo2_config;
+  uint8_t red_led_current_pa1;
+  uint8_t ir_led_current_pa2;
+  uint8_t int_enable_1;
+  uint8_t int_enable_2;
+} max30101_config_t;
+
+typedef struct {
+  uint32_t ir[MAX30101_BUFFER_SIZE];
+  uint32_t red[MAX30101_BUFFER_SIZE];
+} ppg_raw_data_t;
+
+class MAX30101 {
+ public:
+  MAX30101(i2c::Peripheral& bus);
+  ppg_status_t init(const max30101_config_t* config);
+  ppg_status_t update();
+  void getRawData(ppg_raw_data_t* raw_data);
+
+ private:
+  i2c::Peripheral i2c_bus;
+  const uint8_t MAX30101_ADDR;
+  uint16_t batch_index;
+  ppg_raw_data_t raw;
+
+  ppg_status_t readReg(uint8_t reg_addr, uint8_t& value);
+  ppg_status_t writeReg(uint8_t reg_addr, uint8_t value);
+
+  ppg_status_t readPartID(uint8_t& part_id);
+  ppg_status_t readFifo(uint8_t* buffer, uint16_t len);
+  ppg_status_t readFifoPtr(uint8_t& p_write, uint8_t& p_read);
+  ppg_status_t readIntStatus(uint16_t& int_status);
+  void pushBatch(uint32_t ir_data, uint32_t red_data);
+
+  ppg_status_t reset();
+  ppg_status_t clearFifo();
+
+  ppg_status_t writeConfig(const max30101_config_t* config);
+};
+
+}  // namespace bio_sensors
+
+#endif  // BIO_SENSORS_DRIVERS_MAX30101_H

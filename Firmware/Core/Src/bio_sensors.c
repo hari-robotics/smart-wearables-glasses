@@ -767,8 +767,3 @@ void BioSensors_NotifyPpgReady(void)
 {
     g_bio_sensors.ppg_ready_flag = 1U;
 }
-
-
-void BioSensors_EXTI_Callback() {
-  
-}

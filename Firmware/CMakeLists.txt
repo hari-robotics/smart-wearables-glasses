@@ -9,6 +9,7 @@ cmake_minimum_required(VERSION 3.22)
 
 # Setup compiler settings
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
@@ -59,8 +60,10 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/USB_Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c
     
     # Add user defined sources
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/bio_sensors_app.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/driver/config.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/bio_sensors_app.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/bsp/i2c_driver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/drivers/MAX30101.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/drivers/MAX30205.cpp
 )
 
 # Add include paths
@@ -72,7 +75,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/USB_Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
     
     # Add user defined include paths
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/
 )
 
 # Add project symbols (macros)

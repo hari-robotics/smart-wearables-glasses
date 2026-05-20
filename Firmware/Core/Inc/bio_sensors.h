@@ -8,8 +8,8 @@
 
 #include <stdint.h>
 
-#include "defines/MAX30101_reg.h"
-#include "defines/MAX30205_reg.h"
+#include "drivers/MAX30101_reg.h"
+#include "drivers/MAX30205_reg.h"
 
 #ifdef __cplusplus
 extern "C" {

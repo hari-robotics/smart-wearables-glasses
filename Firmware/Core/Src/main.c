@@ -898,14 +898,14 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
   } else if (GPIO_Pin == PPG_INT_Pin) {
     BioSensors_ExtiCpp();
 
-    BioSensors_NotifyPpgReady();
+    // BioSensors_NotifyPpgReady();
 
-    // Acquire byte stream data of BIO sensors
-    uint8_t bio_data[6];
-    BioSensors_ReadData(bio_data);
+    // // Acquire byte stream data of BIO sensors
+    // uint8_t bio_data[6];
+    // BioSensors_ReadData(bio_data);
 
     // Send BIO sensor data through BLE (HR, SpO2, Temp)
-    BLE_SendPacket(DATA_TYPE_BIO_SENSORS, bio_data);
+    // BLE_SendPacket(DATA_TYPE_BIO_SENSORS, bio_data);
   }
 }
 

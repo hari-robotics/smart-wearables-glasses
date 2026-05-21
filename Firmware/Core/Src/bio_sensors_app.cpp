@@ -54,7 +54,7 @@ void UpdateBodyTemperature(BioSensorsData* data) {
 
   float measured_temperature = 0.0f;
   if (temperature_sensor->readTemperature(&measured_temperature) ==
-      i2c::status_t::OK) {
+      peripherals::i2c_status_t::OK) {
     data->body_temperature = measured_temperature;
   }
 }
@@ -98,8 +98,8 @@ void BioSensors_InitCpp() {
   ppg_sensor_ready = false;
   temperature_sensor_ready = false;
 
-  ppg_sensor = std::make_unique<MAX30101>(peripheral::i2c3);
-  temperature_sensor = std::make_unique<MAX30205>(peripheral::i2c3);
+  ppg_sensor = std::make_unique<MAX30101>(peripherals::i2c3);
+  temperature_sensor = std::make_unique<MAX30205>(peripherals::i2c3);
 
   ppg_sensor_ready = (ppg_sensor->init(&kPpgConfig) == ppg_status_t::PPG_OK);
   temperature_sensor_ready =
@@ -107,7 +107,7 @@ void BioSensors_InitCpp() {
            MAX30205_CONFIG_CONTINUOUS | MAX30205_CONFIG_OS_COMPARATOR |
            MAX30205_CONFIG_OS_ACTIVE_LOW | MAX30205_CONFIG_FAULT_QUEUE_1 |
            MAX30205_CONFIG_FORMAT_NORMAL | MAX30205_CONFIG_TIMEOUT_DISABLE) ==
-       i2c::status_t::OK);
+       peripherals::i2c_status_t::OK);
 }
 
 static uint32_t timestamp = 0;

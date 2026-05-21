@@ -4,27 +4,27 @@
 #include <stdint.h>
 
 #include "stm32u5xx_hal.h"
-namespace bio_sensors::i2c {
+namespace bio_sensors::peripherals {
 
-typedef enum { OK, BUSY, TIMEOUT, ERROR } status_t;
+typedef enum { OK, BUSY, TIMEOUT, ERROR } i2c_status_t;
 
-class Peripheral {
+class I2C {
  public:
-  Peripheral(I2C_HandleTypeDef* handle);
-  status_t read(uint8_t dev_addr, uint8_t reg_addr, uint8_t* p_buff,
-                uint16_t len);
-  status_t read(uint8_t dev_addr, uint8_t reg_addr, uint8_t& buff);
-  status_t write(uint8_t dev_addr, uint8_t reg_addr, uint8_t* p_buff,
-                 uint16_t len);
-  status_t write(uint8_t dev_addr, uint8_t reg_addr, uint8_t& buff);
+  I2C(I2C_HandleTypeDef* handle);
+  i2c_status_t read(uint8_t dev_addr, uint8_t reg_addr, uint8_t* p_buff,
+                    uint16_t len);
+  i2c_status_t read(uint8_t dev_addr, uint8_t reg_addr, uint8_t& buff);
+  i2c_status_t write(uint8_t dev_addr, uint8_t reg_addr, uint8_t* p_buff,
+                     uint16_t len);
+  i2c_status_t write(uint8_t dev_addr, uint8_t reg_addr, uint8_t& buff);
 
  private:
   I2C_HandleTypeDef* i2c_handle;
 };
 
 // Type conversion functions (For BSP compatibility)
-status_t convertTypesST(HAL_StatusTypeDef st_status);
+i2c_status_t convertTypesST(HAL_StatusTypeDef st_status);
 
-}  // namespace bio_sensors::i2c
+}  // namespace bio_sensors::peripherals
 
 #endif

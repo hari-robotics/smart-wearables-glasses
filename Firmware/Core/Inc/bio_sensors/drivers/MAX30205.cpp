@@ -7,7 +7,8 @@
 #include "bio_sensors/bsp/i2c_driver.h"
 
 namespace bio_sensors {
-namespace {
+
+using namespace peripherals;
 
 constexpr uint8_t kMax30205AddressTable[2][4][4] = {
     {
@@ -64,47 +65,45 @@ constexpr uint8_t kMax30205AddressTable[2][4][4] = {
     },
 };
 
-}  // namespace
-
-MAX30205::MAX30205(i2c::Peripheral& bus)
+MAX30205::MAX30205(I2C& bus)
     : i2c_bus(bus),
       MAX30205_I2C_ADDR(getDeviceAddress(CONN_GND, CONN_GND, CONN_GND)) {}
 
-i2c::status_t MAX30205::init(uint8_t config) {
-  const i2c::status_t write_status = writeConfig(config);
+i2c_status_t MAX30205::init(uint8_t config) {
+  const i2c_status_t write_status = writeConfig(config);
   uint8_t read_back = 0U;
 
-  if (write_status != i2c::status_t::OK) {
+  if (write_status != i2c_status_t::OK) {
     return write_status;
   }
 
-  const i2c::status_t read_status =
+  const i2c_status_t read_status =
       i2c_bus.read(MAX30205_I2C_ADDR, MAX30205_REG_CONFIGURATION, read_back);
-  if (read_status != i2c::status_t::OK) {
+  if (read_status != i2c_status_t::OK) {
     return read_status;
   }
 
-  return (read_back == config) ? i2c::status_t::OK : i2c::status_t::ERROR;
+  return (read_back == config) ? i2c_status_t::OK : i2c_status_t::ERROR;
 }
 
-i2c::status_t MAX30205::readTemperature(float* temperature) {
+i2c_status_t MAX30205::readTemperature(float* temperature) {
   if (temperature == nullptr) {
-    return i2c::status_t::ERROR;
+    return i2c_status_t::ERROR;
   }
 
   uint8_t data[MAX30205_TEMPERATURE_REGISTER_SIZE_BYTES] = {0U, 0U};
-  const i2c::status_t status =
+  const i2c_status_t status =
       i2c_bus.read(MAX30205_I2C_ADDR, MAX30205_REG_TEMPERATURE, data,
                    MAX30205_TEMPERATURE_REGISTER_SIZE_BYTES);
-  if (status != i2c::status_t::OK) {
+  if (status != i2c_status_t::OK) {
     return status;
   }
 
   *temperature = MAX30205_BytesToCelsius(data[0], data[1], 0U);
-  return i2c::status_t::OK;
+  return i2c_status_t::OK;
 }
 
-i2c::status_t MAX30205::writeConfig(uint8_t config) {
+i2c_status_t MAX30205::writeConfig(uint8_t config) {
   return i2c_bus.write(MAX30205_I2C_ADDR, MAX30205_REG_CONFIGURATION, config);
 }
 

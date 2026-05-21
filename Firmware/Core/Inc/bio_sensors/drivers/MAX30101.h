@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#include "bio_sensors/drivers/MAX30101_config.h"
 #include "bio_sensors/bsp/i2c_driver.h"
+#include "bio_sensors/drivers/MAX30101_config.h"
 
 namespace bio_sensors {
 
@@ -20,14 +20,14 @@ typedef struct {
 
 class MAX30101 {
  public:
-  MAX30101(i2c::Peripheral& bus);
+  MAX30101(peripherals::I2C& bus);
   ppg_status_t init(const max30101_config_t* config);
   ppg_status_t update();
   ppg_status_t getRawData(ppg_raw_data_t* raw_data,
                           uint16_t* sample_count = nullptr) const;
 
  private:
-  i2c::Peripheral i2c_bus;
+  peripherals::I2C i2c_bus;
   const uint8_t MAX30101_ADDR;
   uint16_t batch_index;
   uint16_t raw_sample_count;

@@ -9,7 +9,9 @@
 
 namespace bio_sensors {
 
-MAX30101::MAX30101(i2c::Peripheral& bus)
+using namespace peripherals;
+
+MAX30101::MAX30101(I2C& bus)
     : i2c_bus(bus),
       MAX30101_ADDR(MAX30101_I2C_ADDRESS << 1),
       batch_index(0U),
@@ -62,14 +64,14 @@ ppg_status_t MAX30101::init(const max30101_config_t* config) {
 }
 
 ppg_status_t MAX30101::readReg(uint8_t reg_addr, uint8_t& value) {
-  if (i2c_bus.read(MAX30101_ADDR, reg_addr, value) == i2c::status_t::OK) {
+  if (i2c_bus.read(MAX30101_ADDR, reg_addr, value) == i2c_status_t::OK) {
     return ppg_status_t::PPG_OK;
   }
   return ppg_status_t::PPG_ERROR;
 }
 
 ppg_status_t MAX30101::writeReg(uint8_t reg_addr, uint8_t value) {
-  if (i2c_bus.write(MAX30101_ADDR, reg_addr, value) == i2c::status_t::OK) {
+  if (i2c_bus.write(MAX30101_ADDR, reg_addr, value) == i2c_status_t::OK) {
     return ppg_status_t::PPG_OK;
   }
   return ppg_status_t::PPG_ERROR;
@@ -77,7 +79,7 @@ ppg_status_t MAX30101::writeReg(uint8_t reg_addr, uint8_t value) {
 
 ppg_status_t MAX30101::readFifo(uint8_t* buffer, uint16_t len) {
   if (i2c_bus.read(MAX30101_ADDR, MAX30101_REG_FIFO_DATA, buffer, len) ==
-      i2c::status_t::OK) {
+      i2c_status_t::OK) {
     return ppg_status_t::PPG_OK;
   }
   return ppg_status_t::PPG_ERROR;

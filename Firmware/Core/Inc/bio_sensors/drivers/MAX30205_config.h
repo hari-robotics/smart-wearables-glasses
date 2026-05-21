@@ -1,0 +1,133 @@
+#ifndef BIO_SENSORS_DRIVERS_MAX30205_CONFIG_H
+#define BIO_SENSORS_DRIVERS_MAX30205_CONFIG_H
+
+/**
+ * \file MAX30205_config.h
+ * \brief App-facing configuration definitions for the MAX30205 thermometer.
+ *
+ * This header gathers the I2C address options and configuration bit fields
+ * that an app or driver is likely to use directly.
+ */
+
+#include <stdint.h>
+
+#include "bio_sensors/drivers/MAX30205_reg.h"
+#include "main.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* -------------------------------------------------------------------------- */
+/* I2C timing and address selection */
+/* -------------------------------------------------------------------------- */
+
+#define MAX30205_I2C_TIMEOUT_MS I2C_TIMEOUT
+#define MAX30205_I2C_MAX_FREQ_HZ 400000U
+
+/*
+ * Datasheet Table 1 lists 8-bit slave address bytes. The corresponding
+ * 7-bit address equals (address_byte >> 1).
+ */
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_GND_A0_GND 0x90U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_GND_A0_VDD 0x92U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_GND_A0_SCL 0x82U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_GND_A0_SDA 0x80U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_VDD_A0_GND 0x94U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_VDD_A0_VDD 0x96U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_VDD_A0_SCL 0x86U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_VDD_A0_SDA 0x84U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_SCL_A0_GND 0xB4U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_SCL_A0_VDD 0xB6U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_SCL_A0_SCL 0xA6U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_SCL_A0_SDA 0xA4U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_SDA_A0_GND 0xB0U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_SDA_A0_VDD 0xB2U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_SDA_A0_SCL 0xA2U
+#define MAX30205_I2C_ADDR_WRITE_A2_GND_A1_SDA_A0_SDA 0xA0U
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_GND_A0_GND 0x98U
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_GND_A0_VDD 0x9AU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_GND_A0_SCL 0x8AU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_GND_A0_SDA 0x88U
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_VDD_A0_GND 0x9CU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_VDD_A0_VDD 0x9EU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_VDD_A0_SCL 0x8EU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_VDD_A0_SDA 0x8CU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_SCL_A0_GND 0xBCU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_SCL_A0_VDD 0xBEU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_SCL_A0_SCL 0xAEU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_SCL_A0_SDA 0xACU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_SDA_A0_GND 0xB8U
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_SDA_A0_VDD 0xBAU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_SDA_A0_SCL 0xAAU
+#define MAX30205_I2C_ADDR_WRITE_A2_VDD_A1_SDA_A0_SDA 0xA8U
+
+#define MAX30205_I2C_DEFAULT_WRITE_ADDRESS \
+  MAX30205_I2C_ADDR_WRITE_A2_GND_A1_GND_A0_GND
+#define MAX30205_I2C_DEFAULT_READ_ADDRESS \
+  (MAX30205_I2C_DEFAULT_WRITE_ADDRESS | 0x01U)
+#define MAX30205_I2C_DEFAULT_7BIT_ADDRESS \
+  (MAX30205_I2C_DEFAULT_WRITE_ADDRESS >> 1)
+
+#define MAX30205_I2C_READ_ADDRESS_FROM_WRITE(addr) ((uint8_t)((addr) | 0x01U))
+#define MAX30205_I2C_7BIT_ADDRESS(addr) ((uint8_t)((addr) >> 1))
+
+#define MAX30205_CONVERSION_TIME_TYP_MS 44U
+#define MAX30205_CONVERSION_TIME_MAX_MS 50U
+
+#define MAX30205_BUS_TIMEOUT_TYP_MS 50U
+#define MAX30205_BUS_TIMEOUT_MIN_MS 45U
+#define MAX30205_BUS_TIMEOUT_MAX_MS 55U
+
+/* -------------------------------------------------------------------------- */
+/* Configuration register (0x01)                                              */
+/* -------------------------------------------------------------------------- */
+
+#define MAX30205_CONFIG_SHUTDOWN_MASK (1U << 0)
+#define MAX30205_CONFIG_OS_MODE_MASK (1U << 1)
+#define MAX30205_CONFIG_OS_POLARITY_MASK (1U << 2)
+#define MAX30205_CONFIG_FAULT_QUEUE_MASK (3U << 3)
+#define MAX30205_CONFIG_DATA_FORMAT_MASK (1U << 5)
+#define MAX30205_CONFIG_TIMEOUT_MASK (1U << 6)
+#define MAX30205_CONFIG_ONE_SHOT_MASK (1U << 7)
+
+#define MAX30205_CONFIG_CONTINUOUS 0x00U
+#define MAX30205_CONFIG_SHUTDOWN MAX30205_CONFIG_SHUTDOWN_MASK
+
+#define MAX30205_CONFIG_OS_COMPARATOR 0x00U
+#define MAX30205_CONFIG_OS_INTERRUPT MAX30205_CONFIG_OS_MODE_MASK
+
+#define MAX30205_CONFIG_OS_ACTIVE_LOW 0x00U
+#define MAX30205_CONFIG_OS_ACTIVE_HIGH MAX30205_CONFIG_OS_POLARITY_MASK
+
+#define MAX30205_CONFIG_FAULT_QUEUE_1 (0x00U << 3)
+#define MAX30205_CONFIG_FAULT_QUEUE_2 (0x01U << 3)
+#define MAX30205_CONFIG_FAULT_QUEUE_4 (0x02U << 3)
+#define MAX30205_CONFIG_FAULT_QUEUE_6 (0x03U << 3)
+
+#define MAX30205_CONFIG_FORMAT_NORMAL 0x00U
+#define MAX30205_CONFIG_FORMAT_EXTENDED MAX30205_CONFIG_DATA_FORMAT_MASK
+
+#define MAX30205_CONFIG_TIMEOUT_ENABLE 0x00U
+#define MAX30205_CONFIG_TIMEOUT_DISABLE MAX30205_CONFIG_TIMEOUT_MASK
+
+#define MAX30205_CONFIG_ONE_SHOT_START MAX30205_CONFIG_ONE_SHOT_MASK
+
+static inline uint8_t MAX30205_BuildConfig(
+    uint8_t one_shot, uint8_t timeout_disable, uint8_t extended_format,
+    uint8_t fault_queue, uint8_t os_active_high, uint8_t interrupt_mode,
+    uint8_t shutdown) {
+  return (uint8_t)((one_shot ? MAX30205_CONFIG_ONE_SHOT_START : 0U) |
+                   (timeout_disable ? MAX30205_CONFIG_TIMEOUT_DISABLE : 0U) |
+                   (extended_format ? MAX30205_CONFIG_FORMAT_EXTENDED : 0U) |
+                   (fault_queue & MAX30205_CONFIG_FAULT_QUEUE_MASK) |
+                   (os_active_high ? MAX30205_CONFIG_OS_ACTIVE_HIGH : 0U) |
+                   (interrupt_mode ? MAX30205_CONFIG_OS_INTERRUPT : 0U) |
+                   (shutdown ? MAX30205_CONFIG_SHUTDOWN : 0U));
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  // BIO_SENSORS_DRIVERS_MAX30205_CONFIG_H

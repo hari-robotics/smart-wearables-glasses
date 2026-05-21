@@ -19,8 +19,7 @@ class Peripheral {
   status_t write(uint8_t dev_addr, uint8_t reg_addr, uint8_t& buff);
 
  private:
-  I2C_HandleTypeDef*
-      i2c_handle;  // Default to hi2c3, can be overridden if needed
+  I2C_HandleTypeDef* i2c_handle;
 };
 
 // Type conversion functions (For BSP compatibility)

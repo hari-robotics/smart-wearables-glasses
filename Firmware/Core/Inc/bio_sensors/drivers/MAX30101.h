@@ -3,6 +3,7 @@
 
 #include <cstdint>
 
+#include "bio_sensors/drivers/MAX30101_config.h"
 #include "bio_sensors/bsp/i2c_driver.h"
 
 namespace bio_sensors {
@@ -11,16 +12,6 @@ typedef enum { PPG_OK, PPG_NODATA, PPG_ERROR } ppg_status_t;
 
 constexpr uint8_t MAX30101_BATCH_SIZE = 8;
 constexpr uint16_t MAX30101_BUFFER_SIZE = 400;
-
-typedef struct {
-  uint8_t fifo_config;
-  uint8_t mode;
-  uint8_t spo2_config;
-  uint8_t red_led_current_pa1;
-  uint8_t ir_led_current_pa2;
-  uint8_t int_enable_1;
-  uint8_t int_enable_2;
-} max30101_config_t;
 
 typedef struct {
   uint32_t ir[MAX30101_BUFFER_SIZE];
@@ -32,12 +23,17 @@ class MAX30101 {
   MAX30101(i2c::Peripheral& bus);
   ppg_status_t init(const max30101_config_t* config);
   ppg_status_t update();
-  void getRawData(ppg_raw_data_t* raw_data);
+  ppg_status_t getRawData(ppg_raw_data_t* raw_data,
+                          uint16_t* sample_count = nullptr) const;
 
  private:
   i2c::Peripheral i2c_bus;
   const uint8_t MAX30101_ADDR;
   uint16_t batch_index;
+  uint16_t raw_sample_count;
+  uint8_t fifo_bytes_per_sample;
+  uint8_t red_channel_index;
+  uint8_t ir_channel_index;
   ppg_raw_data_t raw;
 
   ppg_status_t readReg(uint8_t reg_addr, uint8_t& value);
@@ -51,8 +47,16 @@ class MAX30101 {
 
   ppg_status_t reset();
   ppg_status_t clearFifo();
-
   ppg_status_t writeConfig(const max30101_config_t* config);
+  ppg_status_t resolveSampleLayout(const max30101_config_t* config,
+                                   uint8_t& fifo_bytes_per_sample_out,
+                                   uint8_t& red_channel_index_out,
+                                   uint8_t& ir_channel_index_out) const;
+  static uint8_t extractSlotValue(uint8_t slot_config, uint8_t shift);
+  static uint32_t decodeChannelSample(const uint8_t* channel_ptr);
+  void resetRawData();
+
+  static constexpr uint8_t INVALID_CHANNEL_INDEX = 0xFFU;
 };
 
 }  // namespace bio_sensors

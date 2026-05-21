@@ -12,15 +12,15 @@ typedef enum { CONN_GND, CONN_VDD, CONN_SCL, CONN_SDA } max30205_pin_conn_t;
 class MAX30205 {
  public:
   MAX30205(i2c::Peripheral& bus);
-  void init();
-  void readTemperature(float* temperature);
+  i2c::status_t init(uint8_t config);
+  i2c::status_t readTemperature(float* temperature);
 
  private:
   i2c::Peripheral i2c_bus;
   uint8_t MAX30205_I2C_ADDR;
   uint8_t getDeviceAddress(max30205_pin_conn_t a2, max30205_pin_conn_t a1,
                            max30205_pin_conn_t a0);
-  void writeConfig(uint8_t config);
+  i2c::status_t writeConfig(uint8_t config);
 };
 
 }  // namespace bio_sensors

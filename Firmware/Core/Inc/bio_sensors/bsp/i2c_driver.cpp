@@ -1,6 +1,5 @@
 #include "i2c_driver.h"
 
-#include <complex.h>
 #include <stdint.h>
 
 #include "main.h"
@@ -10,6 +9,11 @@
 
 // Import ST I2C Handle
 extern "C" I2C_HandleTypeDef hi2c3;
+
+namespace peripheral {
+bio_sensors::i2c::Peripheral i2c3(&hi2c3);
+}
+
 namespace bio_sensors::i2c {
 status_t convertTypesST(HAL_StatusTypeDef st_status) {
   switch (st_status) {

@@ -821,7 +821,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     // Send the accelerometer and gyroscope data via BLE
     // We are sending only the X-axis data
-    BLE_SendPacket(DATA_TYPE_IMU_ACCELERATION, raw_accelerometer);
+    // BLE_SendPacket(DATA_TYPE_IMU_ACCELERATION, raw_accelerometer);
     //TODO: Change Gyro function
     //BLE_SendPacket(DATA_TYPE_IMU_GYROSCOPE, (uint32_t)gyroscope_data.x);
 

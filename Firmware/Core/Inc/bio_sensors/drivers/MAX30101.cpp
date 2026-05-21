@@ -139,7 +139,8 @@ ppg_status_t MAX30101::update() {
 
   bool updated = false;
   while (samples_to_read > 0) {
-    uint8_t batch_samples = std::min(samples_to_read, MAX30101_BATCH_SIZE);
+    uint8_t batch_samples =
+        std::min(samples_to_read, (uint8_t)(MAX30101_BATCH_SIZE));
     uint16_t bytes_to_read = batch_samples * fifo_bytes_per_sample;
 
     // Size for the largest supported sample layout (4 slots x 3 bytes).

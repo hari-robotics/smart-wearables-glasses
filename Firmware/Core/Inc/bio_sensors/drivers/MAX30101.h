@@ -10,9 +10,6 @@ namespace bio_sensors {
 
 typedef enum { PPG_OK, PPG_NODATA, PPG_ERROR } ppg_status_t;
 
-constexpr uint8_t MAX30101_BATCH_SIZE = 8;
-constexpr uint16_t MAX30101_BUFFER_SIZE = 400;
-
 typedef struct {
   uint32_t ir[MAX30101_BUFFER_SIZE];
   uint32_t red[MAX30101_BUFFER_SIZE];

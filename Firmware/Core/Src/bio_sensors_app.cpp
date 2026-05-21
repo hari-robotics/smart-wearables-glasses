@@ -78,10 +78,6 @@ void UpdatePpgVitals(BioSensorsData* data) {
     return;
   }
 
-  const std::size_t latest_sample_index = valid_sample_count - 1U;
-  data->ir_led_raw = raw_data.ir[latest_sample_index];
-  data->red_led_raw = raw_data.red[latest_sample_index];
-
   if (valid_sample_count < kMinPpgSamplesForVitals) {
     return;
   }

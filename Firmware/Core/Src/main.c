@@ -82,11 +82,6 @@ static AppState current_state = STATE_IDLE;
 // Flag to indicate a USB connection event.
 // Set to 1 when a USB connection is detected.
 uint8_t usb_flag = 0;
-
-// IMU data structures for accelerometer and gyroscope.
-static IMU_Data accelerometer_data;
-static IMU_Data gyroscope_data;
-
 uint8_t raw_accelerometer[6] = {0};
 uint8_t raw_gyroscope[6] = {0};
 
@@ -182,28 +177,6 @@ int main(void)
 
   spi_nand_init();
   find_bad_blocks(bad_blocks); // find bad_blocks and save them
-
-  if(IMU_Init() == 1) {
-    // If IMU is successfully initialized, configure the sensors
-    // Configure Accelerometer: 52 Hz ODR, ±2g FS, High Performance
-    IMU_ConfigAccelerometer(ACC_ODR_52HZ, ACC_FS_2G, 1);
-    // Configure Gyroscope: 52 Hz ODR, 250 dps FS, High Performance
-    IMU_ConfigGyroscope(GYR_ODR_52HZ, GYR_FS_250DPS, 1);
-  } else {
-    // IMU initialization failed, blink red LED for 2 seconds
-	LED_Toggle(LED_RED);
-	HAL_Delay(500);
-	LED_Toggle(LED_RED);
-	HAL_Delay(500);
-	LED_Toggle(LED_RED);
-	HAL_Delay(500);
-	LED_Toggle(LED_RED);
-	HAL_Delay(500);
-	LED_Toggle(LED_RED);
-	HAL_Delay(500);
-	LED_Toggle(LED_RED);
-	HAL_Delay(500);
-  }
 
   // Initializing all Bio sensors
   BioSensors_InitCpp();
@@ -589,7 +562,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 7200-1;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 99;
+  htim2.Init.Period = 999;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -814,41 +787,32 @@ static void MX_GPIO_Init(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim == &htim2){
+    BioSensors_TimerCallbackCpp(); // Update Bio sensor data in the timer callback
+    
+    // // Save the raw accelerometer and gyroscope data in memory
+    // // Create timestamp with sampling frequency @100 Hz
+    // timestamp.sss=tim*10;
+		// if(timestamp.sss == 1000) {
+		// 	timestamp.ss=timestamp.ss+1;
+		// 	timestamp.sss= 0;
+		// 	tim = 0;
+		// 	if (timestamp.ss==60){
+		// 		timestamp.mm=timestamp.mm+1;
+		// 		timestamp.ss=0;
+		// 		if (timestamp.mm==60){
+		// 			timestamp.hh=timestamp.hh+1;
+		// 			timestamp.mm=0;
+		// 		}
+		// 	}
+		// }
 
-    // Read sensor data from the IMU
-    IMU_ReadAccelerometerData(&accelerometer_data, raw_accelerometer);
-    IMU_ReadGyroscopeData(&gyroscope_data, raw_gyroscope);
+		// tim++;
 
-    // Send the accelerometer and gyroscope data via BLE
-    // We are sending only the X-axis data
-    // BLE_SendPacket(DATA_TYPE_IMU_ACCELERATION, raw_accelerometer);
-    //TODO: Change Gyro function
-    //BLE_SendPacket(DATA_TYPE_IMU_GYROSCOPE, (uint32_t)gyroscope_data.x);
-
-    // Save the raw accelerometer and gyroscope data in memory
-    // Create timestamp with sampling frequency @100 Hz
-    timestamp.sss=tim*10;
-		if(timestamp.sss == 1000) {
-			timestamp.ss=timestamp.ss+1;
-			timestamp.sss= 0;
-			tim = 0;
-			if (timestamp.ss==60){
-				timestamp.mm=timestamp.mm+1;
-				timestamp.ss=0;
-				if (timestamp.mm==60){
-					timestamp.hh=timestamp.hh+1;
-					timestamp.mm=0;
-				}
-			}
-		}
-
-		tim++;
-
-		// Create the data packet to be saved in memory
-		write_packet(sample, timestamp, raw_accelerometer, raw_gyroscope, NAND_packet);
-		sample++;
-		// Write data packet in memory
-        write_memory();
+		// // Create the data packet to be saved in memory
+		// write_packet(sample, timestamp, raw_accelerometer, raw_gyroscope, NAND_packet);
+		// sample++;
+		// // Write data packet in memory
+    //     write_memory();
 
 	}
 }
@@ -897,15 +861,6 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
 
   } else if (GPIO_Pin == PPG_INT_Pin) {
     BioSensors_ExtiCpp();
-
-    // BioSensors_NotifyPpgReady();
-
-    // // Acquire byte stream data of BIO sensors
-    // uint8_t bio_data[6];
-    // BioSensors_ReadData(bio_data);
-
-    // Send BIO sensor data through BLE (HR, SpO2, Temp)
-    // BLE_SendPacket(DATA_TYPE_BIO_SENSORS, bio_data);
   }
 }
 

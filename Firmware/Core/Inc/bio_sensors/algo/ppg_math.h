@@ -7,14 +7,16 @@
 namespace bio_sensors::algo {
 
 struct SignalStats {
-  uint32_t min_sample;
-  uint32_t max_sample;
+  float min_sample;
+  float max_sample;
   float mean_sample;
   float ac_amplitude;
 };
 
 float ClampFloat(float value, float min_value, float max_value);
 bool ComputeSignalStats(const uint32_t* samples, std::size_t sample_count,
+                        SignalStats* stats);
+bool ComputeSignalStats(const float* samples, std::size_t sample_count,
                         SignalStats* stats);
 
 }  // namespace bio_sensors::algo

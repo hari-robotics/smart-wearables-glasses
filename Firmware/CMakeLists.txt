@@ -66,6 +66,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/bsp/i2c_driver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/drivers/MAX30101.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/drivers/MAX30205.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/algo/butterworth_filter.c
 )
 
 # Add include paths

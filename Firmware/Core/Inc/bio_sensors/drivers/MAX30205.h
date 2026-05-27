@@ -14,13 +14,13 @@ class MAX30205 {
   MAX30205(peripherals::I2C& bus);
   peripherals::i2c_status_t init(uint8_t config);
   peripherals::i2c_status_t readTemperature(float* temperature);
+  peripherals::i2c_status_t writeConfig(uint8_t config);
 
  private:
   peripherals::I2C i2c_bus;
   uint8_t MAX30205_I2C_ADDR;
   uint8_t getDeviceAddress(max30205_pin_conn_t a2, max30205_pin_conn_t a1,
                            max30205_pin_conn_t a0);
-  peripherals::i2c_status_t writeConfig(uint8_t config);
 };
 
 }  // namespace bio_sensors

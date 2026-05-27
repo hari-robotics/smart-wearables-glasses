@@ -12,5 +12,18 @@
         "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/13.3.1+st.9/bin/arm-none-eabi-gcc*",
         "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/13.3.1+st.9/bin/arm-none-eabi-g++*"
     ],
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "[c]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+    "[cpp]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+    "[h]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+    "[hpp]": {
+        "editor.defaultFormatter": "xaver.clang-format"
+    },
+    "clang-format.style": "file"
 }

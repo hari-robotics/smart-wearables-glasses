@@ -16,8 +16,7 @@ typedef struct {
 void BioSensors_InitCpp();
 void BioSensors_LoopCpp();
 void BioSensors_ExtiCpp();
-
-void BioSensors_AcquireData(BioSensorsData* data);
+void BioSensors_TimerCallbackCpp();
 
 #ifdef __cplusplus
 }

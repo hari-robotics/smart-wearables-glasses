@@ -6,7 +6,7 @@
 
 namespace bio_sensors::algo {
 
-float EstimateHeartRateBpm(const uint32_t* samples, std::size_t sample_count,
+float EstimateHeartRateBpm(const float* samples, std::size_t sample_count,
                            uint32_t sample_rate_hz);
 float EstimateSpo2Percent(const uint32_t* red_samples,
                           const uint32_t* ir_samples,

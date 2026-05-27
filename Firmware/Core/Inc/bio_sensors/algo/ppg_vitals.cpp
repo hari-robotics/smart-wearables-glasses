@@ -1,10 +1,9 @@
 #include "bio_sensors/algo/ppg_vitals.h"
-
 #include "bio_sensors/algo/ppg_math.h"
 
 namespace bio_sensors::algo {
 
-float EstimateHeartRateBpm(const uint32_t* samples, std::size_t sample_count,
+float EstimateHeartRateBpm(const float* samples, std::size_t sample_count,
                            uint32_t sample_rate_hz) {
   if ((samples == nullptr) || (sample_count < 3U) || (sample_rate_hz == 0U)) {
     return 0.0f;
@@ -34,8 +33,8 @@ float EstimateHeartRateBpm(const uint32_t* samples, std::size_t sample_count,
 
   for (std::size_t sample_index = 1U; sample_index + 1U < sample_count;
        ++sample_index) {
-    const uint32_t current_sample = samples[sample_index];
-    const bool is_peak = ((float)current_sample >= threshold) &&
+    const float current_sample = samples[sample_index];
+    const bool is_peak = (current_sample >= threshold) &&
                          (current_sample > samples[sample_index - 1U]) &&
                          (current_sample >= samples[sample_index + 1U]);
 

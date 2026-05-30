@@ -9,6 +9,7 @@ cmake_minimum_required(VERSION 3.22)
 
 # Setup compiler settings
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
@@ -29,7 +30,7 @@ project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Enable CMake support for ASM and C languages
-enable_language(C ASM)
+enable_language(C ASM CXX)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
@@ -49,7 +50,6 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/led_driver.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/Memory_operations.c
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/SPI_NAND.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/bio_sensors.c
     ${CMAKE_CURRENT_SOURCE_DIR}/USB_Device/App/usbd_cdc_if.c
     ${CMAKE_CURRENT_SOURCE_DIR}/USB_Device/App/usbd_desc.c
     ${CMAKE_CURRENT_SOURCE_DIR}/USB_Device/App/usb_device.c
@@ -58,7 +58,16 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/USB_Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c
     ${CMAKE_CURRENT_SOURCE_DIR}/USB_Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c
     ${CMAKE_CURRENT_SOURCE_DIR}/USB_Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c
+    
     # Add user defined sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/bio_sensors_app.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/algo/ppg_math.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/algo/ppg_processing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/algo/ppg_vitals.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/bsp/i2c_driver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/drivers/MAX30101.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/drivers/MAX30205.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/algo/butterworth_filter.c
 )
 
 # Add include paths
@@ -68,6 +77,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/USB_Device/Target
     ${CMAKE_CURRENT_SOURCE_DIR}/USB_Middlewares/ST/STM32_USB_Device_Library/Core/Inc
     ${CMAKE_CURRENT_SOURCE_DIR}/USB_Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
+    
     # Add user defined include paths
 )
 

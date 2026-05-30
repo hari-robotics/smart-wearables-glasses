@@ -21,12 +21,13 @@ class MAX30101 {
   ppg_status_t init(const max30101_config_t* config);
   ppg_status_t update();
   ppg_status_t getRawData(ppg_raw_data_t* raw_data,
-                          uint16_t* sample_count = nullptr) const;
+                          uint16_t* sample_count = nullptr);
 
  private:
   peripherals::I2C i2c_bus;
   const uint8_t MAX30101_ADDR;
-  uint16_t batch_index;
+  uint16_t raw_head_index;
+  uint16_t raw_tail_index;
   uint16_t raw_sample_count;
   uint8_t fifo_bytes_per_sample;
   uint8_t red_channel_index;

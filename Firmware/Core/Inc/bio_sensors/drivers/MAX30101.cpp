@@ -14,7 +14,8 @@ using namespace peripherals;
 MAX30101::MAX30101(I2C& bus)
     : i2c_bus(bus),
       MAX30101_ADDR(MAX30101_I2C_ADDRESS << 1),
-      batch_index(0U),
+      raw_head_index(0U),
+      raw_tail_index(0U),
       raw_sample_count(0U),
       fifo_bytes_per_sample(0U),
       red_channel_index(INVALID_CHANNEL_INDEX),
@@ -178,13 +179,15 @@ ppg_status_t MAX30101::update() {
 }
 
 void MAX30101::pushBatch(uint32_t ir_data, uint32_t red_data) {
-  raw.ir[batch_index] = ir_data;
-  raw.red[batch_index] = red_data;
-
-  batch_index = (batch_index + 1) % MAX30101_BUFFER_SIZE;
-  if (raw_sample_count < MAX30101_BUFFER_SIZE) {
-    ++raw_sample_count;
+  if (raw_sample_count == MAX30101_BUFFER_SIZE) {
+    raw_tail_index = (raw_tail_index + 1U) % MAX30101_BUFFER_SIZE;
+    --raw_sample_count;
   }
+
+  raw.ir[raw_head_index] = ir_data;
+  raw.red[raw_head_index] = red_data;
+  raw_head_index = (raw_head_index + 1U) % MAX30101_BUFFER_SIZE;
+  ++raw_sample_count;
 }
 
 ppg_status_t MAX30101::readPartID(uint8_t& part_id) {
@@ -349,13 +352,14 @@ uint32_t MAX30101::decodeChannelSample(const uint8_t* channel_ptr) {
 }
 
 void MAX30101::resetRawData() {
-  batch_index = 0U;
+  raw_head_index = 0U;
+  raw_tail_index = 0U;
   raw_sample_count = 0U;
   raw = {};
 }
 
 ppg_status_t MAX30101::getRawData(ppg_raw_data_t* raw_data,
-                                  uint16_t* sample_count) const {
+                                  uint16_t* sample_count) {
   if (raw_data == nullptr) {
     return ppg_status_t::PPG_ERROR;
   }
@@ -372,18 +376,15 @@ ppg_status_t MAX30101::getRawData(ppg_raw_data_t* raw_data,
     return ppg_status_t::PPG_OK;
   }
 
-  uint16_t oldest_index = 0U;
-  if (exported_sample_count == MAX30101_BUFFER_SIZE) {
-    oldest_index = batch_index;
-  }
-
   for (uint16_t sample_index = 0U; sample_index < exported_sample_count;
        ++sample_index) {
-    const uint16_t raw_index =
-        (uint16_t)((oldest_index + sample_index) % MAX30101_BUFFER_SIZE);
-    raw_data->ir[sample_index] = raw.ir[raw_index];
-    raw_data->red[sample_index] = raw.red[raw_index];
+    raw_data->ir[sample_index] = raw.ir[raw_tail_index];
+    raw_data->red[sample_index] = raw.red[raw_tail_index];
+    raw_tail_index = (raw_tail_index + 1U) % MAX30101_BUFFER_SIZE;
   }
+
+  raw_sample_count = 0U;
+  raw_head_index = raw_tail_index;
 
   return ppg_status_t::PPG_OK;
 }

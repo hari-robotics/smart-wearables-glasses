@@ -7,22 +7,19 @@
 #include <cstdint>
 #include <memory>
 
-#include "bio_sensors/algo/ppg_vitals.h"
+#include "bio_sensors/algo/ppg_processing.h"
 #include "bio_sensors/bsp/peripherals.h"
 #include "bio_sensors/bsp/system.h"
 #include "bio_sensors/drivers/MAX30101.h"
 #include "bio_sensors/drivers/MAX30101_config.h"
 #include "bio_sensors/drivers/MAX30205.h"
 #include "bio_sensors/drivers/MAX30205_config.h"
-#include "bio_sensors/algo/butterworth_filter.h"
 #include "bluetooth.h"
 
 
 using namespace bio_sensors;
 
-constexpr uint32_t PPG_EQUIVALENT_RATE = BIOSENSORS_PPG_EFFECTIVE_SAMPLE_RATE_HZ;
 constexpr max30101_sample_rate_t PPG_SAMPLE_RATE = SPS100;
-constexpr uint16_t PPG_SAMPLES_REQUIRED_FOR_VITALS = 100U;
 
 const max30101_config_t ppgSensorConfig = {
     MAX30101_FIFO_SAMPLE_AVG_4 | MAX30101_FIFO_ROLLOVER_EN |
@@ -61,42 +58,40 @@ class BioSensors {
     temperature_sensor_ready = (temperature_sensor->init(temperatureSensorConfig) == peripherals::i2c_status_t::OK);
   }
 
-  void updateVitals() {
+  bool updateVitals() {
     // PPG sensor data not ready, skip processing
     if (!ppg_interrupt_pending) {
-      return;
+      return false;
     }
 
-    // Read raw PPG data
+    // Read newly arrived raw PPG samples from the driver FIFO.
     ppg_raw_data_t ppg_raw_data = {};
-    uint16_t valid_sample_count = 0U;
-    updateRawPpgData(&ppg_raw_data, &valid_sample_count);
+    uint16_t fetched_sample_count = 0U;
+    ppg_status_t update_status =
+        updateRawPpgData(&ppg_raw_data, &fetched_sample_count);
     ppg_interrupt_pending = false;
 
-    if (valid_sample_count < PPG_SAMPLES_REQUIRED_FOR_VITALS) {
-      return;
+    if (update_status != ppg_status_t::PPG_OK || fetched_sample_count == 0U) {
+      return false;
+    }
+
+    const algo::PpgVitalsProcessorOutput vitals_output =
+        ppg_vitals_processor.Process(ppg_raw_data, fetched_sample_count);
+    if (!vitals_output.has_skin_contact) {
+      bio_sensors_data.heart_rate = 0.0f;
+      bio_sensors_data.spo2_density = 0.0f;
+      return true;
+    }
+
+    if (!vitals_output.vitals_ready) {
+      return false;
     }
 
     // Keep the temperature reading the same rate as the vital data updates
     updateTemperature(bio_sensors_data.body_temperature);
-
-    // Filter the raw IR data
-    float filtered_ir[MAX30101_BUFFER_SIZE] = {};
-    ButterworthBandPassFilter ir_filter;
-    ButterworthBandPassFilter_Init(&ir_filter, static_cast<float>(ppg_raw_data.ir[0]));
-
-    for (uint16_t index = 0; index < valid_sample_count; ++index) {
-      float ir_sample = static_cast<float>(ppg_raw_data.ir[index]);
-      float filtered_sample = ButterworthBandPassFilter_Process(&ir_filter, ir_sample);
-
-      filtered_ir[index] = filtered_sample;
-    }
-
-    // Estimate vitals
-    bio_sensors_data.heart_rate = algo::EstimateHeartRateBpm(filtered_ir, valid_sample_count,
-                                              PPG_EQUIVALENT_RATE);
-    bio_sensors_data.spo2_density =
-        algo::EstimateSpo2Percent(ppg_raw_data.red, ppg_raw_data.ir, valid_sample_count);
+    bio_sensors_data.heart_rate = vitals_output.heart_rate_bpm;
+    bio_sensors_data.spo2_density = vitals_output.spo2_percent;
+    return true;
   }
 
   void serializeData(uint8_t* buffer) {
@@ -124,19 +119,28 @@ class BioSensors {
 
   // Data storage
   BioSensorsData bio_sensors_data = {};
+  algo::PpgVitalsProcessor ppg_vitals_processor = {};
 
   // States
   bool ppg_sensor_ready = false;
   bool temperature_sensor_ready = false;
   bool ppg_interrupt_pending = false;
 
-  void updateRawPpgData(ppg_raw_data_t* raw_data, uint16_t* sample_count) {
-    if (!ppg_sensor_ready || (ppg_sensor == nullptr)) {
-      return;
+  ppg_status_t updateRawPpgData(ppg_raw_data_t* raw_data,
+                                uint16_t* sample_count) {
+    if (sample_count != nullptr) {
+      *sample_count = 0U;
     }
-    if (ppg_sensor->update() == ppg_status_t::PPG_OK) {
-      ppg_sensor->getRawData(raw_data, sample_count);
+    if (!ppg_sensor_ready || (ppg_sensor == nullptr) || (raw_data == nullptr)) {
+      return ppg_status_t::PPG_ERROR;
     }
+
+    ppg_status_t update_status = ppg_sensor->update();
+    if (update_status != ppg_status_t::PPG_OK) {
+      return update_status;
+    }
+
+    return ppg_sensor->getRawData(raw_data, sample_count);
   }
 
   void updateTemperature(float& temperature) {
@@ -163,10 +167,10 @@ void BioSensors_InitCpp() {
 static uint32_t timestamp = 0;
 void BioSensors_LoopCpp() {
   // Update sensor data
-  sensors.updateVitals();
+  bool vitals_updated = sensors.updateVitals();
 
   // Push debugging data to BLE
-  if (sys::time() - timestamp > 1000u) {
+  if (vitals_updated && (sys::time() - timestamp > 1000u)) {
     uint8_t ble_buffer[6] = {};
     sensors.serializeData(ble_buffer);
     BLE_SendPacket(DATA_TYPE_BIO_SENSORS, ble_buffer);
@@ -176,6 +180,4 @@ void BioSensors_LoopCpp() {
 
 void BioSensors_ExtiCpp() { sensors.setInterruptFlag(); }
 
-void BioSensors_TimerCallbackCpp() {
-    
-}
+void BioSensors_TimerCallbackCpp() {}

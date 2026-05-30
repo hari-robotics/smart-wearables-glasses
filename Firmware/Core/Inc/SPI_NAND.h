@@ -9,6 +9,10 @@
 #ifndef INC_SPI_NAND_H_
 #define INC_SPI_NAND_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -168,6 +172,7 @@ int program_load_random_data(column_address_t column, uint8_t *data_in, size_t w
 int program_execute(read_address_t row, uint32_t timeout);
 int block_erase(read_address_t row, uint32_t timeout);
 void write_memory();
+void write_ppg_memory();
 void read_memory_and_transmit();
 void erase_memory();
 
@@ -183,5 +188,8 @@ bool validate_column_address(column_address_t address);
 feature_reg_status_t poll_for_oip_clear( uint32_t timeout);
 int get_ret_from_ecc_status(feature_reg_status_t status);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* INC_SPI_NAND_H_ */

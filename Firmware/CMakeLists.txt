@@ -62,6 +62,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined sources
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Src/bio_sensors_app.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/algo/ppg_math.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/algo/ppg_processing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/algo/ppg_vitals.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/bsp/i2c_driver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/Core/Inc/bio_sensors/drivers/MAX30101.cpp
